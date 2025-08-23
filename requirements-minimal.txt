@@ -1,0 +1,8 @@
+# Minimal requirements for basic functionality
+selenium
+beautifulsoup4
+requests
+pandas
+webdriver-manager
+python-dotenv
+loguru
