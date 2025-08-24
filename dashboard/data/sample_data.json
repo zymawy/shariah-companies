@@ -1,0 +1,50 @@
+[
+  {
+    "company_code": "1120",
+    "company_name": "مصرف الراجحي",
+    "ticker_symbol": "1120",
+    "market": "تاسي",
+    "shariah_board": "الراجحي المالية",
+    "sector": "البنوك",
+    "subsector": "",
+    "classification": "شرعي",
+    "purification_amount": null,
+    "timestamp": "2025-08-23T10:00:00"
+  },
+  {
+    "company_code": "1140",
+    "company_name": "بنك البلاد",
+    "ticker_symbol": "1140",
+    "market": "تاسي",
+    "shariah_board": "البلاد المالية",
+    "sector": "البنوك",
+    "subsector": "",
+    "classification": "شرعي",
+    "purification_amount": null,
+    "timestamp": "2025-08-23T10:00:00"
+  },
+  {
+    "company_code": "9510",
+    "company_name": "الشركة الوطنية للبناء والتسويق",
+    "ticker_symbol": "9510",
+    "market": "نمو",
+    "shariah_board": "الراجحي المالية",
+    "sector": "العقار",
+    "subsector": "",
+    "classification": "شرعي",
+    "purification_amount": null,
+    "timestamp": "2025-08-23T10:00:00"
+  },
+  {
+    "company_code": "9548",
+    "company_name": "شركة صناعة البلاستيك العربية",
+    "ticker_symbol": "9548",
+    "market": "نمو",
+    "shariah_board": "د.محمد بن سعود العصيمي",
+    "sector": "الصناعة",
+    "subsector": "",
+    "classification": "شرعي",
+    "purification_amount": 0.03,
+    "timestamp": "2025-08-23T10:00:00"
+  }
+]
