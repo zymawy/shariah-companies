@@ -7,9 +7,9 @@ let language = 'ar';
 let theme = 'light';
 
 // GitHub Repository Information
-const GITHUB_REPO = 'zymawy/almaqased';
+const GITHUB_REPO = 'zymawy/shariah-companies';
 const GITHUB_BRANCH = 'main';
-const DATA_PATH = 'data/exports';
+const DATA_PATH = 'dashboard/data';
 
 // ========================================
 // Initialize Application
@@ -54,7 +54,8 @@ async function loadDataFromGitHub() {
             `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/${DATA_PATH}/companies_flat_latest.json`,
             `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/${DATA_PATH}/sample_data.json`,
             // Fallback to local sample data
-            './data/sample_data.json'
+            './dashboard/data/companies_flat_latest.json',
+            './dashboard/data/sample_data.json'
         ];
         
         let dataLoaded = false;
