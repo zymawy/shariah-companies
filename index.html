@@ -18,7 +18,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <!-- Chart.js for modern charts -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide@latest/dist/lucide.css">
@@ -512,6 +512,19 @@
     </footer>
 
     <script>
+        // Wait for Chart.js to load and configure it
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof Chart !== 'undefined') {
+                // Set global Chart.js defaults to prevent errors
+                Chart.defaults.responsive = true;
+                Chart.defaults.maintainAspectRatio = false;
+                Chart.defaults.animation = {
+                    duration: 0 // Disable animations to prevent timing issues
+                };
+                console.log('Chart.js configured successfully');
+            }
+        });
+        
         function dashboard() {
             return {
                 darkMode: false,
@@ -550,22 +563,38 @@
                     this.calculateStatistics();
                     this.updateLastUpdateTime();
                     
-                    // Wait for DOM and Chart.js to be fully loaded
-                    if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', () => {
-                            setTimeout(() => this.renderCharts(), 200);
-                        });
-                    } else {
-                        // DOM is already loaded, just wait for Chart.js
-                        setTimeout(() => {
-                            if (typeof Chart !== 'undefined') {
+                    // Initialize charts after Alpine has finished initializing
+                    // Use multiple strategies to ensure proper timing
+                    const initCharts = () => {
+                        // Check if Chart.js is loaded
+                        if (typeof Chart === 'undefined') {
+                            console.log('Waiting for Chart.js to load...');
+                            setTimeout(initCharts, 100);
+                            return;
+                        }
+                        
+                        // Check if canvas elements exist
+                        const canvasCheck = () => {
+                            const marketCanvas = document.getElementById('marketChart');
+                            const boardCanvas = document.getElementById('boardChart');
+                            const sectorCanvas = document.getElementById('sectorChart');
+                            
+                            if (marketCanvas && boardCanvas && sectorCanvas) {
+                                // All canvases found, render charts
+                                console.log('Canvas elements found, rendering charts...');
                                 this.renderCharts();
                             } else {
-                                // Try again after another delay
-                                setTimeout(() => this.renderCharts(), 500);
+                                console.log('Canvas elements not found yet, retrying...');
+                                setTimeout(canvasCheck, 100);
                             }
-                        }, 200);
-                    }
+                        };
+                        
+                        // Start checking for canvases
+                        canvasCheck();
+                    };
+                    
+                    // Start the initialization process after a short delay
+                    setTimeout(initCharts, 100);
                 },
                 
                 async loadData() {
@@ -730,17 +759,27 @@
                                 return;
                             }
                             
-                            // Destroy existing charts if they exist
+                            // Destroy existing charts if they exist - with extra safety
                             if (this.charts && Object.keys(this.charts).length > 0) {
                                 ['market', 'board', 'sector'].forEach(chartName => {
-                                    if (this.charts[chartName] && typeof this.charts[chartName].destroy === 'function') {
+                                    if (this.charts[chartName]) {
                                         try {
-                                            this.charts[chartName].destroy();
+                                            // Check if chart instance is valid before destroying
+                                            if (this.charts[chartName].canvas) {
+                                                this.charts[chartName].destroy();
+                                                this.charts[chartName] = null;
+                                            } else {
+                                                // Chart has no canvas, just clear the reference
+                                                this.charts[chartName] = null;
+                                            }
                                         } catch (e) {
                                             console.warn(`Error destroying ${chartName} chart:`, e);
+                                            this.charts[chartName] = null;
                                         }
                                     }
                                 });
+                                // Clear the charts object
+                                this.charts = {};
                             }
                             
                             // Initialize charts object if not exists
@@ -748,14 +787,33 @@
                                 this.charts = {};
                             }
                             
-                            // Get contexts with error handling
+                            // Get contexts with error handling and null checks
                             let marketCtx, boardCtx, sectorCtx;
                             try {
-                                marketCtx = marketCanvas.getContext('2d');
-                                boardCtx = boardCanvas.getContext('2d');
-                                sectorCtx = sectorCanvas.getContext('2d');
+                                // Use safe context retrieval
+                                if (marketCanvas && typeof marketCanvas.getContext === 'function') {
+                                    marketCtx = marketCanvas.getContext('2d');
+                                }
+                                if (boardCanvas && typeof boardCanvas.getContext === 'function') {
+                                    boardCtx = boardCanvas.getContext('2d');
+                                }
+                                if (sectorCanvas && typeof sectorCanvas.getContext === 'function') {
+                                    sectorCtx = sectorCanvas.getContext('2d');
+                                }
+                                
+                                // Verify all contexts were retrieved
+                                if (!marketCtx || !boardCtx || !sectorCtx) {
+                                    console.warn('Could not get all canvas contexts, retrying...');
+                                    setTimeout(() => this.renderCharts(), 1000);
+                                    return;
+                                }
                             } catch (e) {
                                 console.error('Error getting canvas context:', e);
+                                console.error('Canvas elements:', {
+                                    marketCanvas: !!marketCanvas,
+                                    boardCanvas: !!boardCanvas,
+                                    sectorCanvas: !!sectorCanvas
+                                });
                                 setTimeout(() => this.renderCharts(), 1000);
                                 return;
                             }
