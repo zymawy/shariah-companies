@@ -17,10 +17,8 @@
     <!-- Alpine.js for interactivity -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
-    <!-- Recharts for modern charts -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
+    <!-- Chart.js for modern charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide@latest/dist/lucide.css">
@@ -182,6 +180,7 @@
                         <a href="#search" class="hover:text-primary transition-colors">البحث</a>
                         <a href="#statistics" class="hover:text-primary transition-colors">الإحصائيات</a>
                         <a href="#boards" class="hover:text-primary transition-colors">الهيئات</a>
+                        <a href="downloads.html" class="hover:text-primary transition-colors font-semibold">📥 التحميل</a>
                     </nav>
                 </div>
             </div>
@@ -256,7 +255,7 @@
                     <template x-for="company in searchResults.slice(0, showAllResults ? searchResults.length : 5)" :key="company.company_code">
                         <div class="p-6 rounded-xl border bg-card hover:shadow-lg transition-all cursor-pointer fade-in"
                              :class="company.purification_amount ? 'border-yellow-200 dark:border-yellow-900' : 'border-green-200 dark:border-green-900'"
-                             @click="showCompanyDetails(company)">
+                             @click="navigateToCompanyDetails(company)">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-4">
                                     <div class="w-14 h-14 rounded-xl flex items-center justify-center"
@@ -293,7 +292,7 @@
                                         </svg>
                                         <span x-text="company.purification_amount ? 'حلال بشرط' : 'حلال 100%'"></span>
                                     </div>
-                                    <button class="text-sm text-primary hover:underline">عرض التفاصيل ←</button>
+                                    <button @click.stop="navigateToCompanyDetails(company)" class="text-sm text-primary hover:underline">عرض التفاصيل ←</button>
                                 </div>
                             </div>
                         </div>
@@ -380,12 +379,16 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                 <div class="p-6 rounded-xl bg-card border">
                     <h3 class="text-lg font-semibold mb-4">توزيع الشركات حسب السوق</h3>
-                    <div id="marketChart" class="h-64"></div>
+                    <div style="position: relative; height: 256px; width: 100%;">
+                        <canvas id="marketChart"></canvas>
+                    </div>
                 </div>
                 
                 <div class="p-6 rounded-xl bg-card border">
                     <h3 class="text-lg font-semibold mb-4">توزيع الشركات حسب الهيئة الشرعية</h3>
-                    <div id="boardChart" class="h-64"></div>
+                    <div style="position: relative; height: 256px; width: 100%;">
+                        <canvas id="boardChart"></canvas>
+                    </div>
                 </div>
             </div>
             
@@ -393,7 +396,9 @@
             <div class="mt-4 md:mt-6">
                 <div class="p-4 md:p-6 rounded-xl bg-card border">
                     <h3 class="text-lg font-semibold mb-4">توزيع الشركات حسب القطاع</h3>
-                    <div id="sectorChart" class="h-64"></div>
+                    <div style="position: relative; height: 256px; width: 100%;">
+                        <canvas id="sectorChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -522,6 +527,7 @@
                 tasiCount: 0,
                 nomuCount: 0,
                 shariahBoards: [],
+                charts: {},
                 
                 async init() {
                     // Check dark mode preference
@@ -543,7 +549,23 @@
                     await this.loadData();
                     this.calculateStatistics();
                     this.updateLastUpdateTime();
-                    this.renderCharts();
+                    
+                    // Wait for DOM and Chart.js to be fully loaded
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', () => {
+                            setTimeout(() => this.renderCharts(), 200);
+                        });
+                    } else {
+                        // DOM is already loaded, just wait for Chart.js
+                        setTimeout(() => {
+                            if (typeof Chart !== 'undefined') {
+                                this.renderCharts();
+                            } else {
+                                // Try again after another delay
+                                setTimeout(() => this.renderCharts(), 500);
+                            }
+                        }, 200);
+                    }
                 },
                 
                 async loadData() {
@@ -660,6 +682,11 @@
                     this.showModal = true;
                 },
                 
+                navigateToCompanyDetails(company) {
+                    // Navigate to the company details page with the company code as a parameter
+                    window.location.href = `company-details.html?code=${company.company_code}`;
+                },
+                
                 updateLastUpdateTime() {
                     const now = new Date();
                     document.getElementById('lastUpdate').textContent = 
@@ -667,73 +694,232 @@
                 },
                 
                 renderCharts() {
-                    // Market Distribution Pie Chart
-                    const marketData = [
-                        { name: 'السوق الرئيسية', value: this.tasiCount, fill: '#3b82f6' },
-                        { name: 'السوق الموازية', value: this.nomuCount, fill: '#fb923c' }
-                    ];
+                    // Don't render if data is not loaded
+                    if (!this.companies || this.companies.length === 0) {
+                        console.warn('No data loaded yet, waiting...');
+                        setTimeout(() => this.renderCharts(), 500);
+                        return;
+                    }
                     
-                    const marketChart = React.createElement(Recharts.ResponsiveContainer, { width: '100%', height: 256 },
-                        React.createElement(Recharts.PieChart, {},
-                            React.createElement(Recharts.Pie, {
-                                data: marketData,
-                                cx: '50%',
-                                cy: '50%',
-                                labelLine: false,
-                                label: ({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`,
-                                outerRadius: 80,
-                                dataKey: 'value'
-                            }),
-                            React.createElement(Recharts.Tooltip)
-                        )
-                    );
+                    // Safety check for Chart.js
+                    if (typeof Chart === 'undefined') {
+                        console.warn('Chart.js not loaded yet, retrying...');
+                        setTimeout(() => this.renderCharts(), 500);
+                        return;
+                    }
                     
-                    ReactDOM.render(marketChart, document.getElementById('marketChart'));
-                    
-                    // Board Distribution Bar Chart
-                    const boardData = this.shariahBoards.map(board => ({
-                        name: board.name.length > 15 ? board.name.substring(0, 15) + '...' : board.name,
-                        شركات: board.total
-                    }));
-                    
-                    const boardChart = React.createElement(Recharts.ResponsiveContainer, { width: '100%', height: 256 },
-                        React.createElement(Recharts.BarChart, { data: boardData, margin: { top: 20, right: 30, left: 20, bottom: 5 } },
-                            React.createElement(Recharts.CartesianGrid, { strokeDasharray: '3 3' }),
-                            React.createElement(Recharts.XAxis, { dataKey: 'name', angle: -45, textAnchor: 'end', height: 100 }),
-                            React.createElement(Recharts.YAxis),
-                            React.createElement(Recharts.Tooltip),
-                            React.createElement(Recharts.Bar, { dataKey: 'شركات', fill: '#10b981' })
-                        )
-                    );
-                    
-                    ReactDOM.render(boardChart, document.getElementById('boardChart'));
-                    
-                    // Sector Distribution Chart
-                    const sectorStats = {};
-                    this.companies.forEach(company => {
-                        const sector = company.sector || 'غير محدد';
-                        sectorStats[sector] = (sectorStats[sector] || 0) + 1;
-                    });
-                    
-                    const sectorData = Object.entries(sectorStats)
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 10)
-                        .map(([sector, count]) => ({
-                            name: sector.length > 20 ? sector.substring(0, 20) + '...' : sector,
-                            عدد: count
-                        }));
-                    
-                    const sectorChart = React.createElement(Recharts.ResponsiveContainer, { width: '100%', height: 256 },
-                        React.createElement(Recharts.BarChart, { data: sectorData, layout: 'horizontal', margin: { top: 20, right: 30, left: 100, bottom: 5 } },
-                            React.createElement(Recharts.CartesianGrid, { strokeDasharray: '3 3' }),
-                            React.createElement(Recharts.XAxis, { type: 'number' }),
-                            React.createElement(Recharts.YAxis, { dataKey: 'name', type: 'category', width: 100 }),
-                            React.createElement(Recharts.Tooltip),
-                            React.createElement(Recharts.Bar, { dataKey: 'عدد', fill: '#8b5cf6' })
-                        )
-                    );
-                    
-                    ReactDOM.render(sectorChart, document.getElementById('sectorChart'));
+                    // Use requestAnimationFrame to ensure DOM is ready
+                    requestAnimationFrame(() => {
+                        try {
+                            // Get chart elements with safety checks
+                            const marketCanvas = document.getElementById('marketChart');
+                            const boardCanvas = document.getElementById('boardChart');
+                            const sectorCanvas = document.getElementById('sectorChart');
+                            
+                            // Check if all canvas elements exist
+                            if (!marketCanvas || !boardCanvas || !sectorCanvas) {
+                                console.warn('Chart canvas elements not found, will retry...');
+                                setTimeout(() => this.renderCharts(), 1000);
+                                return;
+                            }
+                            
+                            // Additional check - ensure canvases are visible in DOM
+                            if (marketCanvas.offsetWidth === 0 || marketCanvas.offsetHeight === 0) {
+                                console.warn('Canvas elements not visible yet, retrying...');
+                                setTimeout(() => this.renderCharts(), 500);
+                                return;
+                            }
+                            
+                            // Destroy existing charts if they exist
+                            if (this.charts && Object.keys(this.charts).length > 0) {
+                                ['market', 'board', 'sector'].forEach(chartName => {
+                                    if (this.charts[chartName] && typeof this.charts[chartName].destroy === 'function') {
+                                        try {
+                                            this.charts[chartName].destroy();
+                                        } catch (e) {
+                                            console.warn(`Error destroying ${chartName} chart:`, e);
+                                        }
+                                    }
+                                });
+                            }
+                            
+                            // Initialize charts object if not exists
+                            if (!this.charts) {
+                                this.charts = {};
+                            }
+                            
+                            // Get contexts with error handling
+                            let marketCtx, boardCtx, sectorCtx;
+                            try {
+                                marketCtx = marketCanvas.getContext('2d');
+                                boardCtx = boardCanvas.getContext('2d');
+                                sectorCtx = sectorCanvas.getContext('2d');
+                            } catch (e) {
+                                console.error('Error getting canvas context:', e);
+                                setTimeout(() => this.renderCharts(), 1000);
+                                return;
+                            }
+                            
+                            // Create Market Distribution Pie Chart
+                            if (marketCtx) {
+                                this.charts.market = new Chart(marketCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['السوق الرئيسية (تاسي)', 'السوق الموازية (نمو)'],
+                            datasets: [{
+                                data: [this.tasiCount, this.nomuCount],
+                                backgroundColor: ['#3b82f6', '#fb923c'],
+                                borderColor: ['#2563eb', '#ea580c'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 15,
+                                        font: {
+                                            family: 'Tajawal',
+                                            size: 12
+                                        }
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return `${label}: ${value} (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                                });
+                            }
+                            
+                            // Create Board Distribution Bar Chart
+                            if (boardCtx && this.shariahBoards && this.shariahBoards.length > 0) {
+                                const boardLabels = this.shariahBoards.map(board => 
+                                    board.name.length > 20 ? board.name.substring(0, 20) + '...' : board.name
+                                );
+                                const boardValues = this.shariahBoards.map(board => board.total);
+                                
+                                this.charts.board = new Chart(boardCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: boardLabels,
+                            datasets: [{
+                                label: 'عدد الشركات',
+                                data: boardValues,
+                                backgroundColor: '#10b981',
+                                borderColor: '#059669',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {
+                                        autoSkip: false,
+                                        maxRotation: 45,
+                                        minRotation: 45,
+                                        font: {
+                                            family: 'Tajawal',
+                                            size: 11
+                                        }
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        font: {
+                                            family: 'Tajawal'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                                });
+                            }
+                            
+                            // Create Sector Distribution Chart
+                            if (sectorCtx && this.companies && this.companies.length > 0) {
+                                const sectorStats = {};
+                                this.companies.forEach(company => {
+                                    const sector = company.sector || 'غير محدد';
+                                    sectorStats[sector] = (sectorStats[sector] || 0) + 1;
+                                });
+                                
+                                const sectorData = Object.entries(sectorStats)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .slice(0, 10);
+                                
+                                this.charts.sector = new Chart(sectorCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: sectorData.map(([sector]) => 
+                                sector.length > 25 ? sector.substring(0, 25) + '...' : sector
+                            ),
+                            datasets: [{
+                                label: 'عدد الشركات',
+                                data: sectorData.map(([, count]) => count),
+                                backgroundColor: '#8b5cf6',
+                                borderColor: '#7c3aed',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        font: {
+                                            family: 'Tajawal'
+                                        }
+                                    }
+                                },
+                                y: {
+                                    ticks: {
+                                        autoSkip: false,
+                                        font: {
+                                            family: 'Tajawal',
+                                            size: 11
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                                });
+                            }
+                            
+                            console.log('Charts rendered successfully');
+                        } catch (error) {
+                            console.error('Error rendering charts:', error);
+                            // Try again after a delay
+                            setTimeout(() => this.renderCharts(), 1000);
+                        }
+                    }); // End of requestAnimationFrame
                 }
             };
         }

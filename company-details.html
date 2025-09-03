@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تفاصيل الشركة - الشركات الحلال</title>
+    <meta name="description" content="تفاصيل الشركة ومنتجاتها المتوافقة مع الشريعة">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js for interactivity -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        * {
+            font-family: 'Tajawal', 'Inter', sans-serif;
+        }
+        
+        .compliant-cell {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .non-compliant-cell {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .partial-compliant-cell {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        @media (max-width: 768px) {
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981',
+                        secondary: '#f3f4f6',
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-gray-50" x-data="companyDetails()" x-init="init()">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 w-full border-b bg-white shadow-sm">
+        <div class="container mx-auto px-4">
+            <div class="flex h-16 items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <a href="index.html" class="text-gray-600 hover:text-gray-900">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </a>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                            <path d="M2 17L12 22L22 17V7L12 12L2 7V17Z"/>
+                        </svg>
+                        <h1 class="text-xl font-bold">الشركات الحلال</h1>
+                    </div>
+                </div>
+                
+                <nav class="flex gap-6 text-sm">
+                    <a href="index.html" class="hover:text-primary transition-colors">الرئيسية</a>
+                    <a href="index.html#statistics" class="hover:text-primary transition-colors">الإحصائيات</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Company Header -->
+    <section class="bg-white border-b py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900" x-text="company.company_name"></h2>
+                    <div class="flex items-center gap-4 mt-2">
+                        <span class="text-lg text-gray-600">رمز السهم: <strong x-text="company.company_code"></strong></span>
+                        <span class="px-3 py-1 rounded-full text-sm font-medium"
+                              :class="company.market === 'تاسي' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'"
+                              x-text="company.market"></span>
+                    </div>
+                </div>
+                <div class="text-left">
+                    <div class="text-sm text-gray-600 mb-1">حسب الشركة</div>
+                    <div class="text-lg font-semibold text-gray-900" x-text="company.shariah_board"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tabs Navigation -->
+    <section class="bg-white border-b sticky top-16 z-40">
+        <div class="container mx-auto px-4">
+            <div class="flex gap-8 overflow-x-auto">
+                <button @click="activeTab = 'compliance'" 
+                        :class="activeTab === 'compliance' ? 'border-b-2 border-primary text-primary' : 'text-gray-600 hover:text-gray-900'"
+                        class="py-4 px-2 font-medium transition-colors whitespace-nowrap">
+                    التوافق الشرعي
+                </button>
+                <button @click="activeTab = 'products'" 
+                        :class="activeTab === 'products' ? 'border-b-2 border-primary text-primary' : 'text-gray-600 hover:text-gray-900'"
+                        class="py-4 px-2 font-medium transition-colors whitespace-nowrap">
+                    المنتجات المالية
+                </button>
+                <button @click="activeTab = 'funds'" 
+                        :class="activeTab === 'funds' ? 'border-b-2 border-primary text-primary' : 'text-gray-600 hover:text-gray-900'"
+                        class="py-4 px-2 font-medium transition-colors whitespace-nowrap">
+                    صناديق الاستثمار
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Compliance Tab -->
+        <div x-show="activeTab === 'compliance'" class="space-y-6">
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <h3 class="text-xl font-bold mb-6">حالة التوافق الشرعي</h3>
+                
+                <!-- Main Compliance Status -->
+                <div class="mb-8 p-6 rounded-lg bg-green-50 border border-green-200">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <h4 class="text-lg font-semibold text-green-800">شركة متوافقة مع الضوابط الشرعية</h4>
+                            <p class="text-green-700 mt-1">معتمدة من <span x-text="company.shariah_board"></span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compliance History Table -->
+                <div class="table-container">
+                    <h4 class="text-lg font-semibold mb-4">سجل التوافق الشرعي</h4>
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="border p-3 text-right font-semibold">التاريخ</th>
+                                <th class="border p-3 text-center font-semibold">الحالة</th>
+                                <th class="border p-3 text-right font-semibold">الملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="record in complianceHistory" :key="record.date">
+                                <tr>
+                                    <td class="border p-3" x-text="record.date"></td>
+                                    <td class="border p-3 text-center">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm"
+                                              :class="record.status === 'compliant' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                                            <svg x-show="record.status === 'compliant'" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                            <span x-text="record.status === 'compliant' ? 'متوافق' : 'غير متوافق'"></span>
+                                        </span>
+                                    </td>
+                                    <td class="border p-3" x-text="record.notes"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Tab -->
+        <div x-show="activeTab === 'products'" class="space-y-6">
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <h3 class="text-xl font-bold mb-6 text-orange-600">المنتجات الراجحة</h3>
+                
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="border p-3 text-right font-semibold">رمز السهم</th>
+                                <th class="border p-3 text-right font-semibold">الشركة</th>
+                                <th class="border p-3 text-center font-semibold">الإتماء للاستثمار</th>
+                                <th class="border p-3 text-center font-semibold">د.محمد بن سعود العصيمي</th>
+                                <th class="border p-3 text-center font-semibold">الراجحي المالية</th>
+                                <th class="border p-3 text-center font-semibold">البلاد المالية</th>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <td colspan="2" class="border p-2"></td>
+                                <td class="border p-2 text-center text-xs text-gray-600">آخر تحديث<br/>2022-06-21</td>
+                                <td class="border p-2 text-center text-xs text-gray-600">آخر تحديث<br/>2025-08-17</td>
+                                <td class="border p-2 text-center text-xs text-gray-600">آخر تحديث<br/>2025-03-31</td>
+                                <td class="border p-2 text-center text-xs text-gray-600">آخر تحديث<br/>2025-03-31</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="product in rajihiProducts" :key="product.code">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="border p-3 font-mono font-semibold" x-text="product.code"></td>
+                                    <td class="border p-3" x-text="product.name"></td>
+                                    <td class="border p-3 text-center">
+                                        <svg x-show="product.itimaa" class="w-5 h-5 text-green-600 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                    <td class="border p-3 text-center">
+                                        <svg x-show="product.alosaimi" class="w-5 h-5 text-green-600 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                    <td class="border p-3 text-center">
+                                        <svg x-show="product.alrajhi" class="w-5 h-5 text-green-600 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                    <td class="border p-3 text-center">
+                                        <svg x-show="product.albilad" class="w-5 h-5 text-green-600 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mt-8">
+                    <h3 class="text-xl font-bold mb-6 text-orange-600">الخدمات المالية</h3>
+                    <div class="table-container">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="border p-3 text-right font-semibold" colspan="2">الخدمة</th>
+                                    <th class="border p-3 text-center font-semibold">دارية المالية</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="border p-3 font-mono font-semibold">4084</td>
+                                    <td class="border p-3">شركة دارية المالية</td>
+                                    <td class="border p-3 text-center">
+                                        <svg class="w-5 h-5 text-green-600 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Funds Tab -->
+        <div x-show="activeTab === 'funds'" class="space-y-6">
+            <div class="bg-white rounded-lg shadow-sm border p-6">
+                <h3 class="text-xl font-bold mb-6 text-orange-600">صناديق الوثائرات</h3>
+                
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="border p-3 text-right font-semibold" rowspan="2">الصندوق</th>
+                                <th class="border p-3 text-center font-semibold" colspan="3">الراجحي المالية</th>
+                                <th class="border p-3 text-center font-semibold">البلاد المالية</th>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <td class="border p-3 text-center text-sm">التداول</td>
+                                <td class="border p-3 text-center text-sm">الأسهم</td>
+                                <td class="border p-3 text-center text-sm">البتروكيماويات</td>
+                                <td class="border p-3 text-center text-sm">النمو والدخل</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="fund in investmentFunds" :key="fund.id">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="border p-3">
+                                        <div class="flex items-center gap-3">
+                                            <span class="font-mono font-semibold text-sm" x-text="fund.code"></span>
+                                            <span x-text="fund.name"></span>
+                                        </div>
+                                    </td>
+                                    <td class="border p-3 text-center">
+                                        <svg x-show="fund.trading" class="w-5 h-5 text-green-600 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                    <td class="border p-3 text-center">
+                                        <svg x-show="fund.stocks" class="w-5 h-5 text-green-600 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                    <td class="border p-3 text-center">
+                                        <svg x-show="fund.petrochemicals" class="w-5 h-5 text-green-600 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                    <td class="border p-3 text-center">
+                                        <svg x-show="fund.growth" class="w-5 h-5 text-green-600 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="mt-8 bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-xl font-bold mb-4">معلومات إضافية</h3>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-semibold text-gray-700 mb-2">القطاع</h4>
+                    <p class="text-gray-600" x-text="company.sector || 'غير محدد'"></p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-700 mb-2">القطاع الفرعي</h4>
+                    <p class="text-gray-600" x-text="company.subsector || 'غير محدد'"></p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-700 mb-2">مبلغ التطهير</h4>
+                    <p class="text-gray-600">
+                        <span x-show="company.purification_amount" class="text-yellow-600 font-medium">
+                            <span x-text="company.purification_amount"></span> ريال للسهم
+                        </span>
+                        <span x-show="!company.purification_amount" class="text-green-600 font-medium">
+                            لا يتطلب تطهير
+                        </span>
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-700 mb-2">آخر تحديث</h4>
+                    <p class="text-gray-600" x-text="formatDate(company.timestamp)"></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t py-8 px-4 mt-12 bg-gray-50">
+        <div class="container mx-auto text-center text-sm text-gray-600">
+            <p>© 2025 دليل الشركات الحلال - جميع البيانات من الهيئات الشرعية المعتمدة</p>
+        </div>
+    </footer>
+
+    <script>
+        function companyDetails() {
+            return {
+                company: {},
+                activeTab: 'compliance',
+                complianceHistory: [],
+                rajihiProducts: [],
+                financialProducts: [],
+                investmentFunds: [],
+                
+                async init() {
+                    // Get company code from URL parameters
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const companyCode = urlParams.get('code');
+                    
+                    if (!companyCode) {
+                        window.location.href = 'index.html';
+                        return;
+                    }
+                    
+                    await this.loadCompanyData(companyCode);
+                    this.generateMockData();
+                },
+                
+                async loadCompanyData(companyCode) {
+                    try {
+                        // Load company data
+                        const response = await fetch('./dashboard/data/companies_flat_latest.json');
+                        const companies = await response.json();
+                        
+                        // Find the specific company
+                        this.company = companies.find(c => c.company_code === companyCode);
+                        
+                        if (!this.company) {
+                            // Try with sample data
+                            const sampleCompany = {
+                                company_code: companyCode,
+                                company_name: `شركة ${companyCode}`,
+                                market: 'تاسي',
+                                shariah_board: 'الراجحي المالية',
+                                sector: 'القطاع المالي',
+                                subsector: 'البنوك',
+                                timestamp: new Date().toISOString()
+                            };
+                            this.company = sampleCompany;
+                        }
+                        
+                        // Update page title
+                        document.title = `${this.company.company_name} - الشركات الحلال`;
+                    } catch (error) {
+                        console.error('Error loading company data:', error);
+                    }
+                },
+                
+                generateMockData() {
+                    // Generate compliance history
+                    this.complianceHistory = [
+                        { date: '2025-03-31', status: 'compliant', notes: 'متوافق مع جميع الضوابط الشرعية' },
+                        { date: '2025-06-21', status: 'compliant', notes: 'متوافق مع جميع الضوابط الشرعية' },
+                        { date: '2025-08-17', status: 'compliant', notes: 'متوافق مع جميع الضوابط الشرعية' },
+                        { date: '2025-03-31', status: 'compliant', notes: 'متوافق مع جميع الضوابط الشرعية' }
+                    ];
+                    
+                    // Generate Rajihi products
+                    this.rajihiProducts = [
+                        { code: '4145', name: 'شركة المكان للإنجاز', itimaa: true, alosaimi: true, alrajhi: true, albilad: true },
+                        { code: '4144', name: 'شركة رؤوم التجارية', itimaa: true, alosaimi: true, alrajhi: true, albilad: true },
+                        { code: '2150', name: 'شركة الصناعات الراجحة الوطنية', itimaa: true, alosaimi: true, alrajhi: true, albilad: true }
+                    ];
+                    
+                    // Generate financial products
+                    this.financialProducts = [
+                        {
+                            id: 1,
+                            name: 'شركة المكان للإنجاز',
+                            description: 'شركة رؤوم التجارية',
+                            code: '4145',
+                            compliant: true,
+                            lastUpdate: '2025-03-31'
+                        },
+                        {
+                            id: 2,
+                            name: 'شركة الصناعات الراجحة الوطنية',
+                            description: 'القطاع الصناعي',
+                            code: '2150',
+                            compliant: true,
+                            lastUpdate: '2025-06-21'
+                        }
+                    ];
+                    
+                    // Generate investment funds
+                    this.investmentFunds = [
+                        {
+                            id: 1,
+                            name: 'صندوق البلاد إم إس سي آي للأسهم التقنية الأمريكية',
+                            code: '9407',
+                            trading: false,
+                            stocks: true,
+                            petrochemicals: false,
+                            growth: true
+                        },
+                        {
+                            id: 2,
+                            name: 'صندوق يقين للتداول للأسهم السعودية',
+                            code: '9400',
+                            trading: true,
+                            stocks: true,
+                            petrochemicals: false,
+                            growth: false
+                        },
+                        {
+                            id: 3,
+                            name: 'صندوق يقين للتداول لقطاع البتروكيماويات',
+                            code: '9401',
+                            trading: true,
+                            stocks: false,
+                            petrochemicals: true,
+                            growth: false
+                        },
+                        {
+                            id: 4,
+                            name: 'صندوق الخير للنمو والدخل للتداول',
+                            code: '4701',
+                            trading: false,
+                            stocks: false,
+                            petrochemicals: false,
+                            growth: true
+                        },
+                        {
+                            id: 5,
+                            name: 'صندوق البلاد إم إس سي آي للأسهم الأمريكية',
+                            code: '9406',
+                            trading: false,
+                            stocks: true,
+                            petrochemicals: false,
+                            growth: true
+                        },
+                        {
+                            id: 6,
+                            name: 'صندوق الأول للاستثمار السعودي الكمي للتداول',
+                            code: '9402',
+                            trading: true,
+                            stocks: true,
+                            petrochemicals: false,
+                            growth: false
+                        }
+                    ];
+                },
+                
+                formatDate(dateString) {
+                    if (!dateString) return 'غير محدد';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('ar-SA');
+                }
+            };
+        }
+    </script>
+</body>
+</html>

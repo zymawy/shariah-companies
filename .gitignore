@@ -40,9 +40,14 @@ env/
 # Data and logs
 data/raw/*
 data/processed/*
-data/exports/*
+# data/exports/* # Commented out to allow export files to be tracked
 logs/*
 *.log
+
+# Allow specific export files
+!data/exports/*.csv
+!data/exports/*.json
+!data/exports/*.xlsx
 
 # Database
 *.db
